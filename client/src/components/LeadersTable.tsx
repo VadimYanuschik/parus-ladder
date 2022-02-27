@@ -11,107 +11,27 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
-
 import TabPanel from "./TabPanel";
-import {collection, getDocs, query, where, orderBy} from "firebase/firestore";
-import {db} from "../firebase/firebase.config";
-import {TableProps} from "../interfaces/user";
-import {a11yProps, daysWithOutGame} from "../helpers/LeaderTableHelpers";
-
+import {a11yProps, tableTimeWithoutGame} from "../helpers/LeaderTableHelpers";
+import {useAppDispatch, useAppSelector} from "../hooks/redux";
+import {fetchLeadersTable} from "../redux/features/leaderTableSlice";
+import CheckVerifiedButton from "./CheckVerifiedButton";
+import {Link} from "@mui/material";
+import {ReactComponent as SteamIcon} from "../assets/steam.svg";
 
 const LeadersTable = () => {
+    const dispatch = useAppDispatch();
     const [value, setValue] = React.useState(0);
-    const [isLoading, setIsLoading] = useState(true);
-
-    const [tables, setTables] = useState<TableProps[]>([]);
+    const {tables, isLoading} = useAppSelector(state => state.tables);
+    const {isAuth, user} = useAppSelector(state => state.user)
 
     const handleChange = (event: React.SyntheticEvent, newValue: number) => {
         setValue(newValue);
     };
 
     useEffect(() => {
-        async function fetchTables() {
-            const qGames = query(collection(db, "games"))
-            const querySnapshotGames = await getDocs(qGames);
-
-            let gameNames: string[] = [];
-
-            querySnapshotGames.forEach(doc => {
-                gameNames.push(doc.data().name)
-            })
-
-            const tempTable: TableProps[] = [];
-
-            const qUsers = query(collection(db, "users"), orderBy("startDate", "asc"));
-            const querySnapshotUsers = await getDocs(qUsers);
-
-            let tableAll: TableProps = {
-                name: 'Все',
-                items: []
-            };
-
-            await Promise.all(querySnapshotUsers.docs.map(async (docUser) => {
-                tableAll.items.push({
-                    name: docUser.data().name,
-                    isVerified: docUser.data().isVerified,
-                    startDate: docUser.data().startDate.toDate(),
-                    game: docUser.data().game
-                })
-            }))
-
-            tempTable.push(tableAll);
-
-            let tableVerified: TableProps = {
-                name: 'Верифицированные',
-                items: []
-            }
-
-            const qUsersVerified = query(collection(db, "users"), where("isVerified", "==", true));
-            const querySnapshotUsersVerified = await getDocs(qUsersVerified)
-
-            querySnapshotUsersVerified.forEach(doc => {
-                tableVerified.items.push({
-                    name: doc.data().name,
-                    isVerified: doc.data().isVerified,
-                    startDate: doc.data().startDate.toDate(),
-                    game: doc.data().game
-                })
-            })
-
-            tempTable.push(tableVerified)
-
-            await Promise.all(gameNames.map(async (docGame) => {
-                let qUsersGame = query(collection(db, "users"), where("game", "==", docGame));
-                const querySnapshotUsersGame = await getDocs(qUsersGame);
-
-                let table: TableProps = {
-                    name: '',
-                    items: []
-                };
-                table.name = docGame
-
-                querySnapshotUsersGame.forEach(docUser => {
-                    table.items.push({
-                        name: docUser.data().name,
-                        isVerified: docUser.data().isVerified,
-                        startDate: docUser.data().startDate.toDate(),
-                        game: docUser.data().game
-                    })
-                })
-                tempTable.push(table);
-            }))
-            setTables(tempTable);
-        }
-
-        fetchTables();
+        dispatch(fetchLeadersTable());
     }, []);
-
-    useEffect(() => {
-        if(tables.length) {
-            setIsLoading(false);
-        }
-    }, [tables]);
-
 
     if (isLoading) {
         return <CircularProgress sx={{position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%)'}}/>
@@ -127,6 +47,7 @@ const LeadersTable = () => {
                         ))}
                     </Tabs>
                 </Box>
+                <CheckVerifiedButton/>
                 {tables.map((table, index) => (
                     <TabPanel value={value} index={index} key={index}>
                         <TableContainer sx={{maxWidth: 650, mx: 'auto', border: 1, borderColor: 'secondary.main'}}
@@ -146,17 +67,18 @@ const LeadersTable = () => {
                                             <TableRow
                                                 key={index + 1}
                                                 sx={{'&:last-child td, &:last-child th': {border: 0}}}
+                                                className={isAuth && user && item.id === user?.id ? 'filled' : ''}
                                             >
                                                 <TableCell component="th" scope="row">
                                                     {index + 1}.
                                                 </TableCell>
-                                                <TableCell align="right"
-                                                           className={item.isVerified ? 'verified' : ''}>{item.name}
+                                                <TableCell align="right">{item.name}
+                                                    {item.steamID && <Link target={'_blank'} sx={{pl: 1}} href={`http://steamcommunity.com/profiles/${item.steamID}`}><SteamIcon/></Link>}
                                                 </TableCell>
                                                 <TableCell
                                                     align="right">{item.game}</TableCell>
                                                 <TableCell
-                                                    align="right">{daysWithOutGame(item.startDate)} д.</TableCell>
+                                                    align="right">{item.startDate && tableTimeWithoutGame(item.startDate)}</TableCell>
                                             </TableRow>
                                         )) : (<TableRow>
                                             <TableCell colSpan={4}>Пусто</TableCell>

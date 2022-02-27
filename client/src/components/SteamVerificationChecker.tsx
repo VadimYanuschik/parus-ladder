@@ -1,11 +1,10 @@
 import React from 'react';
 import Alert from "@mui/material/Alert";
+import {useAppSelector} from "../hooks/redux";
 
-interface SteamVerificationCheckerProps {
-    isVerified: boolean
-}
 
-const SteamVerificationChecker = ({isVerified} : SteamVerificationCheckerProps) : JSX.Element  => {
+const SteamVerificationChecker = () : JSX.Element  => {
+    const isVerified = useAppSelector(state => state.user.user?.isVerified)
     return (
         <>
             {isVerified ? (

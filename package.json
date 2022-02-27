@@ -18,14 +18,15 @@
   "author": "Vadim Yanuschik",
   "license": "ISC",
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.17.2",
     "express-session": "^1.17.2",
+    "node-fetch": "^2.6.7",
     "node-steam-openid": "^1.0.0",
     "passport": "^0.5.2",
     "passport-steam": "^1.0.17"
   },
   "devDependencies": {
     "concurrently": "^7.0.0"
-  },
-  "proxy": "http://localhost:3001"
+  }
 }

@@ -5,11 +5,15 @@ import Grid from "@mui/material/Grid";
 import Button from "@mui/material/Button";
 
 import {getAuth, signInWithPopup, GoogleAuthProvider} from "firebase/auth";
-import {addDoc, collection} from "firebase/firestore";
+import {addDoc, collection, doc, getDocs, query, updateDoc, where} from "firebase/firestore";
 import {db} from "../firebase/firebase.config";
+import {fetchCurrentUser} from "../redux/features/userSlice";
+import {useAppDispatch} from "../hooks/redux";
 
 const OAuth = () => {
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
+
     const handleClick = () => {
         const provider = new GoogleAuthProvider();
         const auth = getAuth();
@@ -18,11 +22,24 @@ const OAuth = () => {
                 const credential = GoogleAuthProvider.credentialFromResult(result);
                 const token = credential?.accessToken;
                 const user = result.user;
-                await addDoc(collection(db, "users"), {
-                    name: result.user.displayName,
-                    isVerified: false,
-                    user: user.uid
-                })
+
+                const q = query(collection(db, "users"), where("user", "==", user.uid));
+                const querySnapshot = await getDocs(q);
+
+                const googleUser = querySnapshot.docs[0];
+                if(!googleUser) {
+                    await addDoc(collection(db, "users"), {
+                        name: result.user.displayName,
+                        isVerified: false,
+                        user: user.uid
+                    }).then(async (docRef) => {
+                        await updateDoc(docRef, {
+                            id: docRef.id
+                        })
+                    });
+                }
+
+                dispatch(fetchCurrentUser());
             }).then(() => {
             navigate('/');
         }).catch((error) => {

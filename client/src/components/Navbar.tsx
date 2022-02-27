@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React from 'react';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
@@ -13,7 +13,7 @@ import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 
 import {Link as RouterLink, useNavigate} from 'react-router-dom';
-import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import { getAuth, signOut } from "firebase/auth";
 import {useAppDispatch, useAppSelector} from "../hooks/redux";
 import {userSlice} from "../redux/features/userSlice";
 
@@ -23,27 +23,9 @@ const Navbar = () => {
     const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
     const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
 
-    const {isAuth} = useAppSelector(state => state.user)
-    const {LogIn, LogOut} = userSlice.actions;
+    const {isAuth, user} = useAppSelector(state => state.user)
+    const {LogOut} = userSlice.actions;
     const dispatch = useAppDispatch();
-
-    useEffect(() => {
-        const auth = getAuth();
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                dispatch(LogIn())
-            }
-        });
-        return () => {
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    dispatch(LogOut())
-                }
-            });
-        }
-    }, []);
-
-
 
     const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorElNav(event.currentTarget);
@@ -121,6 +103,9 @@ const Navbar = () => {
                             <MenuItem component={RouterLink} to={'/contacts'} key={'Контакты'} onClick={handleCloseNavMenu}>
                                 <Typography textAlign="center">Контакты</Typography>
                             </MenuItem>
+                            <MenuItem component={RouterLink} to={'/faq'} key={'FAQ'} onClick={handleCloseNavMenu}>
+                                <Typography textAlign="center">FAQ</Typography>
+                            </MenuItem>
                             <MenuItem component={RouterLink} to={'/login'} key={'Войти'} onClick={handleCloseNavMenu}>
                                 <Typography textAlign="center">Войти</Typography>
                             </MenuItem>
@@ -165,6 +150,15 @@ const Navbar = () => {
                         >
                             Контакты
                         </Button>
+                        <Button
+                            key={'FAQ'}
+                            component={RouterLink}
+                            to={'/faq'}
+                            onClick={handleCloseNavMenu}
+                            sx={{my: 2, color: 'white', display: 'block'}}
+                        >
+                            FAQ
+                        </Button>
                     </Box>
 
                     <Box sx={{flexGrow: 0}}>
@@ -172,7 +166,7 @@ const Navbar = () => {
                             (<>
                                 <Tooltip title="Настройки">
                                     <IconButton onClick={handleOpenUserMenu} sx={{p: 0}}>
-                                        <Avatar alt="Remy Sharp" src="/static/images/avatar/2.jpg"/>
+                                        <Avatar alt={user?.name} src="/static/images/avatar/2.jpg"/>
                                     </IconButton>
                                 </Tooltip>
                                 <Menu
@@ -193,9 +187,6 @@ const Navbar = () => {
                                 >
                                     <MenuItem component={RouterLink} to={'/personal-account'} key={'Личный кабинет'} onClick={handleCloseUserMenu}>
                                         <Typography textAlign="center">Личный кабинет</Typography>
-                                    </MenuItem>
-                                    <MenuItem component={RouterLink} to={'/settings'} key={'Настройки'} onClick={handleCloseUserMenu}>
-                                        <Typography textAlign="center">Настройки</Typography>
                                     </MenuItem>
                                     <MenuItem key={'Выйти'} onClick={() => {
                                         handleCloseUserMenu();

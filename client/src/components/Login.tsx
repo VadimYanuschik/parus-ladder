@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import Container from "@mui/material/Container";
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
@@ -7,22 +7,23 @@ import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
-import {Link as RouterLink, useNavigate} from "react-router-dom";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import {useNavigate} from "react-router-dom";
+import {getAuth, signInWithEmailAndPassword} from "firebase/auth";
 import OAuth from "./OAuth";
 import {useAppDispatch} from "../hooks/redux";
-import {userSlice} from "../redux/features/userSlice";
+import {fetchCurrentUser} from "../redux/features/userSlice";
+import Alert from "@mui/material/Alert";
 
 const Login = () => {
     const navigate = useNavigate()
-
     const dispatch = useAppDispatch()
-    const {LogIn} = userSlice.actions;
 
     const [userCredentials, setUserCredentials] = React.useState({
         email: '',
         password: ''
     });
+
+    const [errorShow, setErrorShow] = useState<boolean>(false);
 
     const handleChangeInputs = (event: React.ChangeEvent<HTMLInputElement>) => {
         setUserCredentials({
@@ -40,13 +41,14 @@ const Login = () => {
         const auth = getAuth();
         signInWithEmailAndPassword(auth, email, password)
             .then((userCredential) => {
-                dispatch(LogIn());
+                dispatch(fetchCurrentUser());
                 navigate('/')
             })
             .catch((error) => {
                 const errorCode = error.code;
                 const errorMessage = error.message;
-                console.log(errorCode, errorMessage)
+                console.log(errorCode, errorMessage);
+                setErrorShow(true);
             });
 
     };
@@ -103,6 +105,9 @@ const Login = () => {
                     >
                         Войти
                     </Button>
+                    {errorShow ? <Alert sx={{my: 2, width: '100%'}} variant="filled" severity="error">
+                        Ошибка при вводе данных
+                    </Alert> : null}
                 </Box>
             </Box>
         </Container>

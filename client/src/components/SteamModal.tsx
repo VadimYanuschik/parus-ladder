@@ -12,27 +12,19 @@ import {Link} from "@mui/material";
 import Alert from "@mui/material/Alert";
 import {collection, doc, getDocs, query, updateDoc, where} from "firebase/firestore";
 import {db} from "../firebase/firebase.config";
+import {useAppDispatch, useAppSelector} from "../hooks/redux";
+import {fetchCurrentUser} from "../redux/features/userSlice";
 
 const SteamModal = () => {
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
     const [open, setOpen] = React.useState(false);
-    const [steamID, setSteamID] = useState('');
+    const [steamIDInput, setSteamIDInput] = useState('');
+    const steamID = useAppSelector(state => state.user.user?.steamID)
 
     useEffect(() => {
-        async function fetchSteamID() {
-            const auth = getAuth();
-            const user = auth.currentUser;
-
-            if (user) {
-                const q = query(collection(db, "users"), where("user", "==", user.uid));
-                const querySnapshot = await getDocs(q);
-                setSteamID(querySnapshot.docs[0].data().steamID);
-            }
-        }
-        fetchSteamID();
-    }, []);
-
-
+        steamID && setSteamIDInput(steamID);
+    }, [])
 
     const handleStateMenu = () => {
         setOpen(!open);
@@ -47,20 +39,28 @@ const SteamModal = () => {
             const querySnapshot = await getDocs(q);
             const userRef = doc(db, "users", querySnapshot.docs[0].id);
 
-            await updateDoc(userRef, {
-                steamID,
-                isVerified: true
-            })
+            if(steamIDInput) {
+                await updateDoc(userRef, {
+                    steamID: steamIDInput,
+                    game: "",
+                    startDate: new Date(),
+                    isVerified: true
+                })
+            } else {
+                await updateDoc(userRef, {
+                    steamID: steamIDInput,
+                    isVerified: false
+                })
+            }
+
+            dispatch(fetchCurrentUser());
         }
         setOpen(!open);
-    }
-
-    const handleSubmit = () => {
-
+        setSteamIDInput(steamIDInput)
     }
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setSteamID(event.target.value)
+        setSteamIDInput(event.target.value)
     }
 
     return (
@@ -76,7 +76,7 @@ const SteamModal = () => {
                 <Alert sx={{m: 2}} variant="filled" severity="info">
                     Для верификации steam-аккаунта укажите ваш SteamID64!
                 </Alert>
-                <Box component="form" onSubmit={handleSubmit} noValidate sx={{px: 2}}>
+                <Box component="form" noValidate sx={{px: 2}}>
                     <TextField
                         margin="normal"
                         fullWidth
@@ -86,7 +86,7 @@ const SteamModal = () => {
                         autoComplete="SteamID64"
                         autoFocus
                         onChange={handleChange}
-                        value={steamID}
+                        value={steamIDInput}
                     />
                 </Box>
                 <Link sx={{p: 2}} href={'https://steamid.io/lookup/'} target={'_blank'}>Узнать свой STEAM_ID</Link>

@@ -1,11 +1,9 @@
 export interface UserProps {
+    id: string,
     isVerified: boolean,
     name: string,
-    startDate: Date,
-    game: string
-}
-
-export interface TableProps {
-    name: string,
-    items: UserProps[]
+    startDate?: string,
+    game?: string,
+    steamID?: string,
+    user?: string
 }

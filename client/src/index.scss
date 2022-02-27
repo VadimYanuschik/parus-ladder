@@ -5,11 +5,10 @@
     font-family: 'Playfair Display';
 }
 
-.verified {
-    position: relative;
-    &::after {
-        position: absolute;
-        content: url("./assets/check.svg");
-        right: 2px;
+.filled {
+    background-color: #3f51b5;
+    
+    td, th {
+        color: #fff;
     }
 }

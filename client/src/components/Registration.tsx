@@ -12,14 +12,13 @@ import {useNavigate} from 'react-router-dom';
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import OAuth from "./OAuth";
 import {useAppDispatch} from "../hooks/redux";
-import {userSlice} from "../redux/features/userSlice";
-import { collection, addDoc } from "firebase/firestore";
+import {fetchCurrentUser, userSlice} from "../redux/features/userSlice";
+import {collection, addDoc, updateDoc} from "firebase/firestore";
 import {db} from "../firebase/firebase.config";
 
 const Registration = () => {
     const navigate = useNavigate()
     const dispatch = useAppDispatch()
-    const {LogIn} = userSlice.actions;
 
     const [userCredentials, setUserCredentials] = React.useState({
         nickname: '',
@@ -48,11 +47,16 @@ const Registration = () => {
                 updateProfile(userCredential.user, {
                     displayName: nickname
                 }).then(async () => {
-                    dispatch(LogIn());
                     await addDoc(collection(db, "users"), {
                         name: userCredential.user.displayName,
                         isVerified: false,
                         user: userCredential.user.uid
+                    }).then(async (docRef) => {
+                        await updateDoc(docRef, {
+                            id: docRef.id
+                        }).then(() => {
+                            dispatch(fetchCurrentUser())
+                        })
                     })
                 }).then(() => {
                     navigate('/');

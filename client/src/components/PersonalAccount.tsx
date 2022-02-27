@@ -9,97 +9,129 @@ import Select, {SelectChangeEvent} from "@mui/material/Select";
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 
-import {getAuth} from "firebase/auth";
+import {getAuth, signOut, updatePassword} from "firebase/auth";
 import DeleteAccount from "./DeteleAccount";
-import {collection, query, where, getDocs, doc, updateDoc} from "firebase/firestore";
+import {doc, updateDoc} from "firebase/firestore";
 import {db} from "../firebase/firebase.config";
 import SteamModal from "./SteamModal";
 import SteamVerificationChecker from "./SteamVerificationChecker";
+import {useAppDispatch, useAppSelector} from "../hooks/redux";
+import {fetchGameNames} from "../redux/features/gameNames";
+import {LogOut, UpdateUser} from "../redux/features/userSlice";
+import axios from "axios";
+import Alert from "@mui/material/Alert";
+import {useNavigate} from "react-router-dom";
+
 
 interface FormDataProps {
     nickname: string,
     email: string,
-    password: string,
     newPassword: string,
-    game: string,
-    defaultGames: any[]
+    game: string
+}
+
+interface SteamGame {
+    name: string,
+    playtime_forever: number
 }
 
 const PersonalAccount = () => {
+    const dispatch = useAppDispatch();
+    const navigate = useNavigate();
+    const user = useAppSelector(state => state.user.user);
+    const {games, isLoading} = useAppSelector(state => state.games);
+
+    const [isSteamGamesLoading, setIsSteamGamesLoading] = useState(true);
+    const [steamGames, setSteamGames] = useState<SteamGame[]>([]);
+
+    const [successSaveModalShow, setSuccessSaveModalShow] = useState(false);
+
+
     const [formData, setFormData] = useState<FormDataProps>({
         nickname: '',
         email: '',
-        password: '',
         newPassword: '',
-        game: '',
-        defaultGames: []
+        game: ""
     });
 
-    const [userData, setUserData] = useState({
-        uid: '',
-        user: '',
-        isVerified: false
-    });
+    async function fetchSteamGames() {
+        if (user?.steamID) {
+            await axios.get(`http://localhost:3001/api/steam/getownedgames/${user.steamID}`)
+                .then(result => {
+                    if (result) {
+                        setIsSteamGamesLoading(false);
+                        setSteamGames(result.data);
+                    }
+                })
+        }
+    }
 
     useEffect(() => {
+        dispatch(fetchGameNames());
         const auth = getAuth();
-        const user = auth.currentUser;
+        const userAuth = auth.currentUser;
 
-        if (user) {
+        if (userAuth && user) {
             setFormData({
                 ...formData,
-                nickname: user.displayName || '',
-                email: user.email || '',
-            })
-            setUserData({
-                ...userData,
-                uid: user.uid
-            })
+                nickname: userAuth.displayName || '',
+                email: userAuth.email || ''
+            });
         }
     }, []);
 
     useEffect(() => {
-        async function getUserData() {
-            const q = query(collection(db, "users"), where("user", "==", userData.uid));
-            const querySnapshot = await getDocs(q);
-            setUserData({
-                ...userData,
-                user: querySnapshot.docs[0].id,
-                isVerified: querySnapshot.docs[0].data().isVerified
-            })
-        }
-
-        async function getGames() {
-            const q = query(collection(db, "games"));
-            const querySnapshot = await getDocs(q);
-            let qGames: any[] = [];
-            querySnapshot.forEach(doc => {
-                qGames.push(doc.data().name)
-            })
+        if (user && user.game) {
             setFormData({
                 ...formData,
-                defaultGames: qGames
+                game: user?.game
             })
         }
-
-        getUserData();
-        getGames();
-    }, [userData.uid]);
-
+        if (user && user.isVerified) {
+            fetchSteamGames();
+        }
+    }, [user]);
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
         async function saveChanges() {
-            const userRef = doc(db, "users", userData.user);
+            const playedTime = formData.game && steamGames.find(steamGame => steamGame.name === formData.game)?.playtime_forever
+            const userRef = user && doc(db, "users", user.id);
 
-            await updateDoc(userRef, {
+            userRef && await updateDoc(userRef, {
+                name: formData.nickname,
                 game: formData.game,
-                startDate: new Date()
+                startDate: new Date(),
+                playedTime: playedTime || 0
+            }).then(() => {
+                setSuccessSaveModalShow(true);
+                setTimeout(() => {
+                    setSuccessSaveModalShow(false);
+                }, 5000)
             });
+            dispatch(UpdateUser({game: formData.game, startDate: new Date().toString()}));
 
-            console.log(formData.game)
+            if(formData.newPassword.length) {
+                const auth = getAuth();
+                const user = auth.currentUser;
+
+                if (user) {
+                    updatePassword(user, formData.newPassword).then(() => {
+                        const auth = getAuth();
+                        signOut(auth).then(() => {
+                            dispatch(LogOut())
+                            navigate('/')
+                        }).catch((error) => {
+                            console.log(error)
+                        });
+                    }).catch((error) => {
+                        console.log(error)
+                    });
+                }
+            }
         }
+
         saveChanges();
     };
 
@@ -121,7 +153,7 @@ const PersonalAccount = () => {
         <Container sx={{my: 2}}>
             <Box
                 sx={{
-                    marginTop: 8,
+                    marginTop: 2,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -133,7 +165,7 @@ const PersonalAccount = () => {
                     Личный Кабинет
                 </Typography>
 
-                <SteamVerificationChecker isVerified={userData.isVerified}/>
+                <SteamVerificationChecker/>
                 <SteamModal/>
                 <Box component="form" onSubmit={handleSubmit} noValidate sx={{mt: 1}}>
                     <FormControl fullWidth>
@@ -145,9 +177,11 @@ const PersonalAccount = () => {
                             label="Выберите игру"
                             onChange={handleChangeSelect}
                         >
-                            {formData.defaultGames.map((game, index) => (
-                                <MenuItem key={game} value={game}>{game}</MenuItem>
-                            ))}
+                            {user && user.isVerified ? !isSteamGamesLoading && steamGames.map((game, index) => {
+                                return <MenuItem key={index} value={game.name}>{game.name}</MenuItem>
+                            }) : !isLoading && games.map((game, index) => {
+                                return <MenuItem key={index} value={game}>{game}</MenuItem>
+                            })}
                         </Select>
                     </FormControl>
                     <TextField
@@ -174,17 +208,6 @@ const PersonalAccount = () => {
                     />
                     <TextField
                         margin="normal"
-                        required
-                        fullWidth
-                        name="password"
-                        label="Password"
-                        type="password"
-                        id="password"
-                        autoComplete="current-password"
-                        onChange={handleChange}
-                    />
-                    <TextField
-                        margin="normal"
                         fullWidth
                         id="newPassword"
                         label="New Password"
@@ -206,6 +229,15 @@ const PersonalAccount = () => {
                     </Button>
                 </Box>
                 <DeleteAccount/>
+                {successSaveModalShow ? <Alert sx={{my: 2, width: '100%'}}
+                                               variant="filled"
+                                               severity="success"
+                                               onClose={() => {
+                                                   setSuccessSaveModalShow(false)
+                                               }}
+                >
+                    Успешно сохранено!
+                </Alert> : ''}
             </Box>
         </Container>
     );

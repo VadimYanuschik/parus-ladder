@@ -1,62 +1,27 @@
 const express = require('express');
-const passport = require('passport');
-const session = require('express-session');
-const passportSteam = require('passport-steam');
-const SteamStrategy = passportSteam.Strategy;
+const fetch = require("node-fetch");
+const cors = require('cors')
+
 const app = express();
+app.use(cors())
 
 const port = 3001;
 
-// Required to get data from user for sessions
-passport.serializeUser((user, done) => {
-    done(null, user);
-});
-
-passport.deserializeUser((user, done) => {
-    done(null, user);
-});
-
-// Initiate Strategy
-passport.use(new SteamStrategy({
-        returnURL: 'http://localhost:' + port + '/api/auth/steam/return',
-        realm: 'http://localhost:' + port + '/',
-        apiKey: '5B92D9E3145BEEC9265C03504ACDAF1A'
-    }, function (identifier, profile, done) {
-        process.nextTick(function () {
-            profile.identifier = identifier;
-            return done(null, profile);
-        });
-    }
-));
-
-app.use(session({
-    secret: 'VadimYanuschik',
-    saveUninitialized: true,
-    resave: false,
-    cookie: {
-        maxAge: 3600000
-    }
-}));
-
-app.use(passport.initialize());
-
-app.use(passport.session());
 
 // Initiate app
 app.listen(port, () => {
     console.log('Listening, port ' + port);
 });
 
-app.get('/api/success', (req, res) => {
-    res.json(req.user);
-    console.log(req.user)
-});
 
-// Routes
-app.get('/api/auth/steam', passport.authenticate('steam', {failureRedirect: '/'}), function (req, res) {
-    res.redirect('/api/success')
-});
+app.get('/api/steam/getownedgames/:steamID', async (req, res) => {
+    const response = await fetch(`http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=5B92D9E3145BEEC9265C03504ACDAF1A&steamid=${req.params.steamID}&format=json&include_appinfo=true&include_played_free_games=true`)
+    const data = await response.json();
+    res.send(data.response.games)
+})
 
-app.get('/api/auth/steam/return', passport.authenticate('steam', {failureRedirect: '/'}), function (req, res) {
-    res.redirect('/api/success')
-});
+app.get('/api/steam/getrecentgames/:steamID', async (req, res) => {
+    const response = await fetch(`http://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key=5B92D9E3145BEEC9265C03504ACDAF1A&steamid=${req.params.steamID}&format=json`)
+    const data = await response.json();
+    res.send(data.response.games)
+})
