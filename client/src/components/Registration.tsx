@@ -12,7 +12,7 @@ import {useNavigate} from 'react-router-dom';
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import OAuth from "./OAuth";
 import {useAppDispatch} from "../hooks/redux";
-import {fetchCurrentUser, userSlice} from "../redux/features/userSlice";
+import {fetchCurrentUser} from "../redux/features/userSlice";
 import {collection, addDoc, updateDoc} from "firebase/firestore";
 import {db} from "../firebase/firebase.config";
 

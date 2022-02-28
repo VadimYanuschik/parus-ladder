@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import Container from "@mui/material/Container";
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -59,6 +59,7 @@ const LeadersTable = () => {
                                         <TableCell sx={{fontWeight: 'bold'}} align="right">Имя</TableCell>
                                         <TableCell sx={{fontWeight: 'bold'}} align="right">Игра</TableCell>
                                         <TableCell sx={{fontWeight: 'bold'}} align="right">Кол-во дней</TableCell>
+                                        <TableCell sx={{fontWeight: 'bold'}} align="right">Звание</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -78,7 +79,9 @@ const LeadersTable = () => {
                                                 <TableCell
                                                     align="right">{item.game}</TableCell>
                                                 <TableCell
-                                                    align="right">{item.startDate && tableTimeWithoutGame(item.startDate)}</TableCell>
+                                                    align="right">{item.startDate && tableTimeWithoutGame(new Date(item.startDate))}</TableCell>
+                                                <TableCell
+                                                    align="right">{item.rank}</TableCell>
                                             </TableRow>
                                         )) : (<TableRow>
                                             <TableCell colSpan={4}>Пусто</TableCell>

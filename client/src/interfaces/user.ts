@@ -5,5 +5,6 @@ export interface UserProps {
     startDate?: string,
     game?: string,
     steamID?: string,
-    user?: string
+    user?: string,
+    rank?: string
 }

@@ -13,5 +13,5 @@ export interface TablesProps {
 export interface SteamPlayCheckerProps {
     name: string,
     game: string,
-    withOutGameDays: number
+    withOutGameDays: string
 }

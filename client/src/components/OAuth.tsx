@@ -5,7 +5,7 @@ import Grid from "@mui/material/Grid";
 import Button from "@mui/material/Button";
 
 import {getAuth, signInWithPopup, GoogleAuthProvider} from "firebase/auth";
-import {addDoc, collection, doc, getDocs, query, updateDoc, where} from "firebase/firestore";
+import {addDoc, collection, getDocs, query, updateDoc, where} from "firebase/firestore";
 import {db} from "../firebase/firebase.config";
 import {fetchCurrentUser} from "../redux/features/userSlice";
 import {useAppDispatch} from "../hooks/redux";

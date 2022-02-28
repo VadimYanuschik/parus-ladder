@@ -49,6 +49,7 @@ export const userSlice = createSlice({
             if(state.user) {
                 state.user.game = action.payload.game;
                 state.user.startDate = action.payload.startDate;
+                state.user.name = action.payload.name;
             }
         }
     }

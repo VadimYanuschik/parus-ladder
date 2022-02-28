@@ -16,7 +16,6 @@ import {useAppDispatch, useAppSelector} from "../hooks/redux";
 import {fetchCurrentUser} from "../redux/features/userSlice";
 
 const SteamModal = () => {
-    const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const [open, setOpen] = React.useState(false);
     const [steamIDInput, setSteamIDInput] = useState('');

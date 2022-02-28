@@ -2,6 +2,7 @@ import {createAsyncThunk, createSlice} from "@reduxjs/toolkit";
 import {TableProps, TablesProps} from "../../interfaces/table";
 import {collection, getDocs, orderBy, query, where} from "firebase/firestore";
 import {db} from "../../firebase/firebase.config";
+import {calculateRank} from "../../helpers/LeaderTableHelpers";
 
 const initialState : TablesProps = {
     tables: [],
@@ -23,8 +24,6 @@ export const fetchLeadersTable = createAsyncThunk(
         const tempTable: TableProps[] = [];
 
         const qUsers = query(collection(db, "users"),
-            orderBy("game", "asc"),
-            where("game", "!=", ""),
             orderBy("startDate", "asc"));
         const querySnapshotUsers = await getDocs(qUsers);
 
@@ -34,14 +33,17 @@ export const fetchLeadersTable = createAsyncThunk(
         };
 
         await Promise.all(querySnapshotUsers.docs.map(async (docUser) => {
-            tableAll.items.push({
-                id: docUser.id,
-                name: docUser.data().name,
-                isVerified: docUser.data().isVerified,
-                startDate: new Date(docUser.data().startDate.seconds * 1000).toString(),
-                game: docUser.data().game,
-                steamID: docUser.data().steamID
-            })
+            if(docUser.data().game) {
+                tableAll.items.push({
+                    id: docUser.id,
+                    name: docUser.data().name,
+                    isVerified: docUser.data().isVerified,
+                    startDate: new Date(docUser.data().startDate.seconds * 1000).toString(),
+                    game: docUser.data().game,
+                    steamID: docUser.data().steamID,
+                    rank: calculateRank(new Date(docUser.data().startDate.seconds * 1000))
+                })
+            }
         }))
 
 
@@ -54,20 +56,21 @@ export const fetchLeadersTable = createAsyncThunk(
 
         const qUsersVerified = query(collection(db, "users"),
             where("isVerified", "==", true),
-            orderBy("game", "asc"),
-            where("game", "!=", ""),
             orderBy("startDate", "asc"));
         const querySnapshotUsersVerified = await getDocs(qUsersVerified)
 
         querySnapshotUsersVerified.forEach(doc => {
-            tableVerified.items.push({
-                id: doc.id,
-                name: doc.data().name,
-                isVerified: doc.data().isVerified,
-                startDate: new Date(doc.data().startDate.seconds * 1000).toString(),
-                game: doc.data().game,
-                steamID: doc.data().steamID
-            })
+            if(doc.data().game) {
+                tableVerified.items.push({
+                    id: doc.id,
+                    name: doc.data().name,
+                    isVerified: doc.data().isVerified,
+                    startDate: new Date(doc.data().startDate.seconds * 1000).toString(),
+                    game: doc.data().game,
+                    steamID: doc.data().steamID,
+                    rank: calculateRank(new Date(doc.data().startDate.seconds * 1000))
+                })
+            }
         })
 
         tempTable.push(tableVerified)
@@ -91,7 +94,8 @@ export const fetchLeadersTable = createAsyncThunk(
                     isVerified: docUser.data().isVerified,
                     startDate: new Date(docUser.data().startDate.seconds * 1000).toString(),
                     game: docUser.data().game,
-                    steamID: docUser.data().steamID
+                    steamID: docUser.data().steamID,
+                    rank: calculateRank(new Date(docUser.data().startDate.seconds * 1000))
                 })
             })
             tempTable.push(table);

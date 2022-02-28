@@ -1,12 +1,14 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Button, Dialog, DialogContent, Modal, Snackbar, Typography} from "@mui/material";
+import {Box, Button, Dialog, DialogContent, Typography} from "@mui/material";
 import {query, collection, limit, getDocs, where, doc, updateDoc, addDoc, orderBy} from "firebase/firestore";
 import {db} from "../firebase/firebase.config";
-import {daysWithOutGame, isPossibleUpdateTables} from "../helpers/LeaderTableHelpers";
+import {isPossibleUpdateTables} from "../helpers/LeaderTableHelpers";
 import axios from "axios";
 import {SteamPlayCheckerProps} from "../interfaces/table";
 import {useAppDispatch} from "../hooks/redux";
 import {fetchLeadersTable} from "../redux/features/leaderTableSlice";
+import {fetchLastUpdate} from "../helpers/FetchLastUpdateTable";
+import {checkLastGameOnline} from "../helpers/CheckLastGameOnline";
 
 
 const CheckVerifiedButton = () => {
@@ -19,85 +21,24 @@ const CheckVerifiedButton = () => {
 
 
     useEffect(() => {
-        async function fetchLastUpdate() {
-            const q = query(collection(db, "tableUpdates"), orderBy("updatedAt", "desc"), limit(1));
-            const querySnapshot = await getDocs(q);
-
-            if (!querySnapshot.empty) {
-                const updateDate = querySnapshot.docs[0].data().updatedAt.toDate();
-                const {isPossible, diffHours} = isPossibleUpdateTables(updateDate);
-
-                setIsActiveButton(isPossible);
-                setUntilUpdate(diffHours);
-            }
-        }
-
-        fetchLastUpdate();
+        fetchLastUpdate().then(res => {
+            const {isPossible, diffHours} = res
+            setIsActiveButton(isPossible);
+            setUntilUpdate(diffHours);
+        });
 
     }, []);
 
 
     const handleClick = () => {
-        async function checkLastGameOnline() {
-            const q = query(collection(db, "users"),
-                where("isVerified", "==", true),
-                where("game", "!=", ""));
-            const querySnapshot = await getDocs(q);
+        checkLastGameOnline().then(res => {
+            const {isPossibleUpdate, untilUpdateHours, droppedUsers} = res
 
-            let steamChangedPlayedTime: SteamPlayCheckerProps[] = [];
-
-
-            querySnapshot.forEach(userDocument => {
-                const {steamID, playedTime, game, id, name, startDate} = userDocument.data()
-
-                async function fetchRecentGames(steamID: string) {
-                    let isSame = false;
-                    await axios.get(`http://localhost:3001/api/steam/getrecentgames/${steamID}`)
-                        .then(async result => {
-                            if (result.data) {
-                                const recentGame = result.data.find((steamGame: { name: string; }) => steamGame.name === game);
-
-                                if (recentGame) {
-                                    isSame = recentGame?.playtime_forever === playedTime;
-                                } else {
-                                    isSame = true
-                                }
-
-                                if (!isSame) {
-                                    const userRef = doc(db, "users", id);
-
-                                    await updateDoc(userRef, {
-                                        startDate: new Date().toString(),
-                                        playedTime: recentGame?.playtime_forever || playedTime
-                                    }).then(async res => {
-                                        let droppedUser = {
-                                            name,
-                                            game,
-                                            withOutGameDays: daysWithOutGame(startDate)
-                                        }
-                                        setDroppedOutGame(prev => [...prev, droppedUser]);
-                                        dispatch(fetchLeadersTable());
-                                    })
-                                }
-                            }
-                        })
-                }
-
-                fetchRecentGames(steamID);
-            })
-
-            // @ts-ignore
-            const currentTime = new Date()
-            const docRef = await addDoc(collection(db, "tableUpdates"), {
-                updatedAt: currentTime
-            }).then(res => {
-                const {isPossible, diffHours} = isPossibleUpdateTables(currentTime);
-                setIsActiveButton(isPossible);
-                setUntilUpdate(diffHours);
-            })
-        }
-
-        checkLastGameOnline();
+            setIsActiveButton(isPossibleUpdate);
+            setUntilUpdate(untilUpdateHours);
+            setDroppedOutGame(droppedUsers);
+            dispatch(fetchLeadersTable());
+        });
         handleChangeModalState();
     }
 
@@ -121,7 +62,7 @@ const CheckVerifiedButton = () => {
                     {droppedOutGame.length ? droppedOutGame.map(user => {
                         const {name, game, withOutGameDays} = user
                         return <Typography key={name + game}>{name} продержался
-                            без {game} - <strong>{withOutGameDays} д.</strong></Typography>
+                            без {game} - <strong>{withOutGameDays}</strong></Typography>
                     }) : <Typography key={'Никто не вылетел'}>Никто не вылетел</Typography>}
                 </DialogContent>
             </Dialog>

@@ -35,17 +35,23 @@ interface SteamGame {
     playtime_forever: number
 }
 
+interface UpdatedFields {
+    name?: string,
+    game?: string,
+    playedTime?: number,
+    startDate?: Date
+}
+
 const PersonalAccount = () => {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+
     const user = useAppSelector(state => state.user.user);
     const {games, isLoading} = useAppSelector(state => state.games);
 
     const [isSteamGamesLoading, setIsSteamGamesLoading] = useState(true);
     const [steamGames, setSteamGames] = useState<SteamGame[]>([]);
-
     const [successSaveModalShow, setSuccessSaveModalShow] = useState(false);
-
 
     const [formData, setFormData] = useState<FormDataProps>({
         nickname: '',
@@ -68,27 +74,23 @@ const PersonalAccount = () => {
 
     useEffect(() => {
         dispatch(fetchGameNames());
-        const auth = getAuth();
-        const userAuth = auth.currentUser;
-
-        if (userAuth && user) {
-            setFormData({
-                ...formData,
-                nickname: userAuth.displayName || '',
-                email: userAuth.email || ''
-            });
-        }
     }, []);
 
     useEffect(() => {
-        if (user && user.game) {
+        const auth = getAuth();
+        const userAuth = auth.currentUser;
+
+        if(user) {
             setFormData({
                 ...formData,
-                game: user?.game
+                game: user?.game || '',
+                nickname: user.name,
+                email: userAuth?.email || ''
             })
-        }
-        if (user && user.isVerified) {
-            fetchSteamGames();
+
+            if (user.isVerified) {
+                fetchSteamGames();
+            }
         }
     }, [user]);
 
@@ -99,18 +101,27 @@ const PersonalAccount = () => {
             const playedTime = formData.game && steamGames.find(steamGame => steamGame.name === formData.game)?.playtime_forever
             const userRef = user && doc(db, "users", user.id);
 
-            userRef && await updateDoc(userRef, {
-                name: formData.nickname,
-                game: formData.game,
-                startDate: new Date(),
-                playedTime: playedTime || 0
-            }).then(() => {
+            let updatedFields : UpdatedFields = {};
+
+            if(user?.name != formData.nickname) {
+                updatedFields["name"] = formData.nickname
+            }
+
+            if(user?.game != formData.game) {
+                updatedFields["game"] = formData.game
+                updatedFields["startDate"] = new Date();
+                updatedFields["playedTime"] = 0;
+            }
+
+
+            // @ts-ignore
+            userRef && await updateDoc(userRef, updatedFields).then(() => {
                 setSuccessSaveModalShow(true);
                 setTimeout(() => {
                     setSuccessSaveModalShow(false);
                 }, 5000)
             });
-            dispatch(UpdateUser({game: formData.game, startDate: new Date().toString()}));
+            dispatch(UpdateUser({game: formData.game, name: formData.nickname, startDate: new Date().toString()}));
 
             if(formData.newPassword.length) {
                 const auth = getAuth();
@@ -203,6 +214,7 @@ const PersonalAccount = () => {
                         name="email"
                         autoComplete="email"
                         autoFocus
+                        disabled={true}
                         onChange={handleChange}
                         value={formData.email}
                     />
