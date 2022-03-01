@@ -62,7 +62,7 @@ const PersonalAccount = () => {
 
     async function fetchSteamGames() {
         if (user?.steamID) {
-            await axios.get(`http://localhost:3001/api/steam/getownedgames/${user.steamID}`)
+            await axios.get(`/api/steam/getownedgames/${user.steamID}`)
                 .then(result => {
                     if (result) {
                         setIsSteamGamesLoading(false);
