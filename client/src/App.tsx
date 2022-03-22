@@ -12,6 +12,7 @@ import Faq from "./components/Faq";
 import {getAuth, onAuthStateChanged} from "firebase/auth";
 import {useAppDispatch} from "./hooks/redux";
 import {fetchCurrentUser, userSlice} from "./redux/features/userSlice";
+import Chat from "./components/Chat";
 
 function App() {
     const dispatch = useAppDispatch();
@@ -37,6 +38,7 @@ function App() {
                 <Route path={'/table'} element={<LeadersTable/>}/>
                 <Route path={'/contacts'} element={<Contacts/>}/>
                 <Route path={'/faq'} element={<Faq/>}/>
+                <Route path={'/chat'} element={<Chat/>}/>
                 <Route path={'/login'} element={<Login/>}/>
                 <Route path={'/registration'} element={<Registration/>}/>
                 <Route path="/personal-account" element={<PrivateRoute component={PersonalAccount}/>}/>

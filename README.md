@@ -12,4 +12,4 @@ Implemented feature of linking a steam account, which confirms your period of ab
 Implemented a leaderboard among popular games where you can demonstrate your willpower.
 Implemented rank system.
 
-WebSiteLink: https://netlify-thinks-vadimyanuschik-is-great.netlify.app/
+WebSiteLink: https://parus-ladder.netlify.app/

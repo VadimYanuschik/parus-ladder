@@ -7,8 +7,13 @@
 
 .filled {
     background-color: #3f51b5;
-    
+
     td, th {
         color: #fff;
+    }
+}
+.chat-input {
+    @media (max-width: 600px) {
+        flex-direction: column;
     }
 }

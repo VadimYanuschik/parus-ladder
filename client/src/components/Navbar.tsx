@@ -106,6 +106,9 @@ const Navbar = () => {
                             <MenuItem component={RouterLink} to={'/faq'} key={'FAQ'} onClick={handleCloseNavMenu}>
                                 <Typography textAlign="center">FAQ</Typography>
                             </MenuItem>
+                            <MenuItem component={RouterLink} to={'/chat'} key={'Чат'} onClick={handleCloseNavMenu}>
+                                <Typography textAlign="center">Чат</Typography>
+                            </MenuItem>
                             <MenuItem component={RouterLink} to={'/login'} key={'Войти'} onClick={handleCloseNavMenu}>
                                 <Typography textAlign="center">Войти</Typography>
                             </MenuItem>
@@ -158,6 +161,15 @@ const Navbar = () => {
                             sx={{my: 2, color: 'white', display: 'block'}}
                         >
                             FAQ
+                        </Button>
+                        <Button
+                            key={'Чат'}
+                            component={RouterLink}
+                            to={'/chat'}
+                            onClick={handleCloseNavMenu}
+                            sx={{my: 2, color: 'white', display: 'block'}}
+                        >
+                            Чат
                         </Button>
                     </Box>
 

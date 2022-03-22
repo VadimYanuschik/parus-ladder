@@ -19,7 +19,7 @@ export async function checkLastGameOnline() {
 
         async function fetchRecentGames(steamID: string) {
             let isSame = false;
-            await axios.get(`/api/steam/getrecentgames/${steamID}`)
+            await axios.get(`https://parus-ladder.herokuapp.com/api/steam/getrecentgames/${steamID}`)
                 .then(async result => {
                     if (result.data) {
                         const recentGame = result.data.find((steamGame: { name: string; }) => steamGame.name === game);

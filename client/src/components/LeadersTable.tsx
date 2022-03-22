@@ -18,6 +18,7 @@ import {fetchLeadersTable} from "../redux/features/leaderTableSlice";
 import CheckVerifiedButton from "./CheckVerifiedButton";
 import {Link} from "@mui/material";
 import {ReactComponent as SteamIcon} from "../assets/steam.svg";
+import Loader from "./Loader";
 
 const LeadersTable = () => {
     const dispatch = useAppDispatch();
@@ -34,7 +35,7 @@ const LeadersTable = () => {
     }, []);
 
     if (isLoading) {
-        return <CircularProgress sx={{position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%)'}}/>
+        return <Loader/>
     }
 
     return (
